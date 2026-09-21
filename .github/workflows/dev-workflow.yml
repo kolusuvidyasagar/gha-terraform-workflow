@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+
   pull_request:
     branches:
       - develop
@@ -12,10 +13,15 @@ permissions:
   id-token: write
   contents: read
 
+env:
+  AWS_REGION: us-east-1
+  TF_VERSION: 1.8.5
+
 jobs:
-  plan:
+  terraform-plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
+
     if: github.event_name == 'pull_request'
 
     defaults:
@@ -29,14 +35,17 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.8.5
+          terraform_version: ${{ env.TF_VERSION }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::792207721917:role/github-oidc
-          role-session-name: github-actions
-          aws-region: us-east-1
+          role-session-name: github-actions-plan
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
 
       - name: Terraform Init
         run: terraform init
@@ -50,10 +59,12 @@ jobs:
       - name: Terraform Plan
         run: terraform plan -var-file=dev.tfvars
 
-  apply:
+
+  terraform-apply:
     name: Terraform Apply
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
 
     defaults:
       run:
@@ -66,14 +77,17 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.8.5
+          terraform_version: ${{ env.TF_VERSION }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::646057972714:role/gihub-oidc-udemy-course
-          role-session-name: github-actions
-          aws-region: us-east-1
+          role-session-name: github-actions-apply
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
 
       - name: Terraform Init
         run: terraform init
