@@ -4,7 +4,7 @@ provider "aws" {
 
 terraform {
   backend "s3" {
-    bucket = "tfstate-dev-us-east-1-c9q27s"
+    bucket = "gha-terraform-2026"
     key = "dev/terraform.tfstate"
     region = "ap-south-1"
   }
